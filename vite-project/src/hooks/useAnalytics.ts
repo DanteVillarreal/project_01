@@ -2,10 +2,18 @@ import { useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { analytics } from '../services/supabase';
 
+const SESSION_ID_KEY = 'analytics_session_id';
+
 export const useAnalytics = () => {
   // Initialize session ID on mount
   useEffect(() => {
-    const sessionId = uuidv4();
+    // Check for existing session ID or create new one
+    let sessionId = sessionStorage.getItem(SESSION_ID_KEY);
+    if (!sessionId) {
+      sessionId = uuidv4();
+      sessionStorage.setItem(SESSION_ID_KEY, sessionId);
+    }
+
     const trackInitialVisit = async () => {
       try {
         await analytics.trackVisit({
@@ -29,10 +37,16 @@ export const useAnalytics = () => {
   // Click tracking handler
   const trackClick = useCallback(async (event: MouseEvent) => {
     const target = event.target as HTMLElement;
+    const sessionId = sessionStorage.getItem(SESSION_ID_KEY);
+    
+    if (!sessionId) {
+      console.error('No session ID found for click tracking');
+      return;
+    }
     
     try {
       await analytics.trackClick({
-        visitorId: sessionStorage.getItem('visitorId') || 'unknown',
+        visitorId: sessionId,
         elementId: target.id || 'no-id',
         elementClass: Array.from(target.classList).join(' ') || 'no-class',
         elementText: target.textContent || '',

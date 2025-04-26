@@ -7,7 +7,28 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Create Supabase client with real-time enabled
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
+
+// Enable real-time subscriptions for our tables
+supabase.channel('custom-all-channel')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'visitors',
+  }, () => {})
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'click_events',
+  }, () => {})
+  .subscribe();
 
 // Analytics-specific functions
 export const analytics = {
